@@ -1,65 +1,81 @@
 from scr_uma.items import Horse
+from scr_uma.items import Race
 import scrapy
-# from url_list
+from scr_uma.spiders.url_list import urls_list
 
 
 class RaceSpider(scrapy.Spider):
     name = 'race'
     allowed_domains = ['race.netkeiba.com']
+    urls = urls_list
 
-    sample_list = ['202109040805']
-    start_urls = ['https://race.netkeiba.com/race/result.html?race_id=' + p for p in sample_list]
+    # sample_list = ['202109040805']
+    # start_urls = ['https://race.netkeiba.com/race/result.html?race_id=' + p for p in sample_list]
 
-    # start_urls = ['https://race.netkeiba.com/race/result.html?race_id=' + p for p in url_list.urls_list]
+    start_urls = ['https://race.netkeiba.com/race/result.html?race_id=' + p for p in urls]
     count = -1
 
     def parse(self, response):
-        print(1)
+        print("url取得\n\n")
         self.count = self.count + 1
         # id = url_list.urls_list[self.count]
-        id = self.sample_list[self.count]
-        raceId = id[2:4] + id[6:12]
+        id = self.urls[self.count]
+        raceId = int(id[2:4] + id[6:12])
 
-        data = response.xpath('//*[@id="page"]/div[2]/div/div[1]/div[3]/div[2]')
-        
-        time = data.xpath('text()[1]').extract()
-        if time == []:
+        data = response.css('#page > div.RaceColumn01 > div > div.RaceMainColumn > div.RaceList_NameBox > div.RaceList_Item02 > div.RaceData01')
+
+        clock = data.css('::text').get()
+        if clock == None:
             print(2)
-            print(raceId + 'のレースはありません。')
+            print(str(raceId) + 'のレースはありません。')
             return
-            
-        fi_dis = data.xpath('span[1]').extract()
-        # data_2 = data.xpath('div.RaceData02::text').get()
-        print(3)
-        print(time)
-        print(fi_dis)
-        print(4)
+        
+        clock = ment_clock(clock)
+
+        field_and_distance = data.css('span:nth-child(1)::text').get().strip(' ')
+        print(field_and_distance)
+        field = ment_f_d(field_and_distance, 0)
+        distance = ment_f_d(field_and_distance, 1)
+        # print(data.split('('))
+        r_or_l_and_wea = data.get().split('(')[1].split('<')[0].split('/ 天候:')
+        r_or_l = ment_r_l(r_or_l_and_wea[0])
+        weather = r_or_l_and_wea[1]
+
+        data2 = response.css('#page > div.RaceColumn01 > div > div.RaceMainColumn > div.RaceList_NameBox > div.RaceList_Item02 > div.RaceData02')
+        count = data2.css('span:nth-child(1)::text').get()
+        count = ment_count(count)
+        place = data2.css('span:nth-child(2)::text').get()
+        day = data2.css('span:nth-child(3)::text').get()
+        day = ment_day(day)
+        regulation = data2.css('span:nth-child(4)::text').get()
+
+        yield Race(
+            race_id = raceId,
+            clock = clock,
+            field = field,
+            distance = distance,
+            r_or_l = r_or_l,
+            weather = weather,
+            count = count,
+            place = place,
+            day = day,
+            regulation = regulation
+        )
+
 
         for race in response.xpath('//*[@id="All_Result_Table"]/tbody/tr'):
             resNum = race.xpath('td[1]/div/text()').get()
-            print(resNum)
             startNum = race.xpath('td[2]/div/text()').get()
-            print(startNum)
             hoseNum = race.xpath('td[3]/div/text()').get()
-            print(hoseNum)
             hoseName = race.xpath('td[4]/span/a/text()').get()
-            print(hoseName)
             sexAge = race.xpath('td[5]/div/span/text()').get()
-            print(sexAge)
             weiCa = race.xpath('td[6]/div/span/text()').get()
-            print(weiCa)
             ridName = race.xpath('td[7]/a/text()').get()
-            print(ridName)
             time = race.xpath('td[8]/span/text()').get()
-            print(time)
             pop = race.xpath('td[10]/span/text()').get()
-            print(pop)
             odds = race.xpath('td[11]/span/text()').get()
-            print(odds)
             hoseWei = race.xpath('td[15]/text()').get()
-            print(hoseWei)
             weiChange = race.xpath('td[15]/small/text()').get()
-            print(weiChange)
 
             print(5)
             
@@ -81,6 +97,41 @@ class RaceSpider(scrapy.Spider):
                 wei_change = ment_wei_change(weiChange)
             )
 
+def ment_clock(clock):
+    clock = clock.replace('\n', '').split(':')[0]
+    return int(clock)
+def ment_f_d(f_d, num):
+    field = f_d[0]
+    distance = f_d.strip(f_d[0]).strip('m')
+
+    if field == '芝':
+        field = 0
+    else:
+        field = 1
+
+    if num == 0:
+        return field
+    
+    else:
+        return int(distance)
+
+def ment_r_l(r_l):
+    r_l = r_l[0]
+    if r_l == '右':
+        r_l = 0
+    else:
+        r_l = 1
+    
+    return r_l
+
+def ment_count(count):
+    count = count.strip('回')
+    return int(count)
+
+def ment_day(day):
+    day = day.strip('日目')
+    return int(day)
+
 def ment_res_num(num):
     if num is str:
         num = int(num)
@@ -93,6 +144,7 @@ def ment_hose_num(num):
     return int(num)
 
 def ment_sex_age(sexAge, num):
+    sexAge = sexAge.replace("\n", "")
     sex = sexAge[0]
 
     if sex == '牡':

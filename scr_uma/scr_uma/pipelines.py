@@ -26,7 +26,7 @@ class ScrUmaPipeline:
         item に spider から渡された item がセットされる
         """
         print(6)
-        if item is Horse:
+        if type(item) is Horse:
             print(7)
             sql= "INSERT INTO races \
                 (race_id, res_num, start_num, hose_num, hose_name, sex, age, wei_ca, rid_name, time, pop, odds, hose_wei, wei_change) \
@@ -38,9 +38,9 @@ class ScrUmaPipeline:
             print(8)
             return item
         
-        if item is Race:
+        if type(item) is Race:
             sql= "INSERT INTO inf \
-                (race_id, , clock, field, distance, r_or_l, weather, count, place, day, regulation) \
+                (race_id, clock, field, distance, r_or_l, weather, count, place, day, regulation) \
                     VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s) ON CONFLICT DO NOTHING;"
                 
             curs = self.conn.cursor()
