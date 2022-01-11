@@ -1,7 +1,8 @@
 # keiba
 
 <h1>概要</h1>
-<p>Scrapyを使用して「ネット競馬」から各レースから情報を引っ張る。それをPostgreSQLに保存する。</p>
+<p>Scrapyを使用して「ネット競馬」から各レース情報を引っ張る。それをPostgreSQLに保存する。</p>
+<p>https://nar.netkeiba.com/race/result.html?race_id=202254010901&rf=race_list の各馬ごとのデータを得る。</p>
 <p>write_json.pyで保存していたデータをJSON形式でLocalに引っ張る</p>
 <h1>環境</h1>
 <p>python 3.0</p>
